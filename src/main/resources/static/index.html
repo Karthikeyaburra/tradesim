@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TradeSim — Modern Equity Trading &amp; Digital Wallet</title>
+  <meta name="description" content="Real-time equity trading dashboard, ACID financial wallet, and portfolio analytics built with Spring Boot and MySQL." />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <a href="#mainWorkspace" class="skip-link">Skip to main workspace</a>
+
+  <!-- Toast Live Region -->
+  <div id="toastRegion" class="toast-region" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- =====================================================================
+       AUTH / WELCOME EXPERIENCE (Matches Clean Fintech Card Aesthetic)
+       ===================================================================== -->
+  <section id="authScreen" class="auth-screen" aria-label="Sign in to TradeSim">
+    <div class="auth-shell">
+      <!-- Left Showcase Card -->
+      <div class="auth-showcase">
+        <div class="auth-brand-row">
+          <div class="brand-logo">
+            <span class="brand-dot"></span>
+            <span class="brand-wordmark">TradeSim</span>
+          </div>
+          <span class="live-pill"><span class="pulse-dot"></span> NSE Live Stream</span>
+        </div>
+
+        <div class="auth-hero-copy">
+          <h1>Smart equity trading &amp; real-time digital custody.</h1>
+          <p>
+            Trade 16 NSE blue-chip equities with instant market fills, escrowed limit orders,
+            live candlestick &amp; trend charts, and an ACID-verified double-entry wallet.
+          </p>
+        </div>
+
+        <!-- Preview Balance + Mini Market Trend Card -->
+        <div class="auth-preview-stack">
+          <div class="auth-mini-balance-card">
+            <div>
+              <span class="muted-label">Starter Trading Wallet</span>
+              <div class="auth-mini-balance-val tabular">₹10,00,000.00 <small>INR</small></div>
+            </div>
+            <span class="badge-pill positive">▲ Instant Credit</span>
+          </div>
+
+          <div class="auth-live-feed-card">
+            <div class="card-head-compact">
+              <span class="card-title-sm">Live Market Trend</span>
+              <span id="authFeedCount" class="muted-xs">16 Equities</span>
+            </div>
+            <div id="authMoverList" class="auth-mover-list" aria-label="Live stock prices">
+              <!-- Populated live via SSE -->
+            </div>
+          </div>
+        </div>
+
+        <div class="auth-pillars">
+          <div class="pillar-chip">Lock-Free MySQL Settlement</div>
+          <div class="pillar-chip">Append-Only Ledger Audit</div>
+          <div class="pillar-chip">WCAG 2.1 AA Accessible</div>
+        </div>
+      </div>
+
+      <!-- Right Auth Card -->
+      <div class="auth-form-card">
+        <div class="auth-form-header">
+          <h2>Welcome back</h2>
+          <p>Launch a funded instant account or sign in to your portfolio.</p>
+        </div>
+
+        <!-- 1-Click Instant Demo Buttons -->
+        <div class="instant-demo-group">
+          <button type="button" id="instantTraderBtn" class="btn-primary-black btn-block">
+            Launch Instant Trader Demo (₹10L)
+          </button>
+          <button type="button" id="instantAdminBtn" class="btn-outline-clean btn-block">
+            Open Exchange Admin Demo
+          </button>
+        </div>
+
+        <div class="divider-label"><span>or continue with credentials</span></div>
+
+        <div class="segmented-tabs" role="tablist" aria-label="Authentication mode">
+          <button type="button" id="tabLogin" class="seg-tab active" role="tab" aria-selected="true">Sign In</button>
+          <button type="button" id="tabRegister" class="seg-tab" role="tab" aria-selected="false">Create Account</button>
+        </div>
+
+        <form id="authForm" class="clean-form" novalidate>
+          <div class="field-box">
+            <label for="authUsername">Username</label>
+            <input id="authUsername" name="username" type="text" autocomplete="username" placeholder="e.g. karthik_trader" required minlength="3" maxlength="40" />
+          </div>
+
+          <div class="field-box">
+            <label for="authPassword">Password</label>
+            <input id="authPassword" name="password" type="password" autocomplete="current-password" placeholder="Minimum 6 characters" required minlength="6" maxlength="72" />
+          </div>
+
+          <div id="authErrorBox" class="form-alert" hidden role="alert"></div>
+
+          <button type="submit" id="authSubmitBtn" class="btn-primary-black btn-block">
+            Sign In to Dashboard
+          </button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       MAIN APPLICATION SHELL (DotCoin-Inspired Clean Sidebar + Floating Cards)
+       ===================================================================== -->
+  <div id="appShell" class="app-shell" hidden>
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar" aria-label="Primary Sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-dot"></span>
+        <span class="brand-wordmark">TradeSim</span>
+      </div>
+
+      <nav class="sidebar-nav" aria-label="Main Navigation">
+        <button type="button" class="nav-item active" data-view="dashboard">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1v-9.5z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Dashboard</span>
+        </button>
+
+        <button type="button" class="nav-item" data-view="market">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 17l6-6 4 4 8-8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M17 7h4v4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Market</span>
+        </button>
+
+        <button type="button" class="nav-item" data-view="wallet">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="6" width="18" height="13" rx="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M16 12.5h.01M3 10h18" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>My Wallets</span>
+        </button>
+
+        <button type="button" class="nav-item" data-view="orders">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" stroke-linecap="round"/>
+            <rect x="9" y="3" width="6" height="4" rx="1.5"/>
+            <path d="M9 12h6M9 16h4" stroke-linecap="round"/>
+          </svg>
+          <span>Orders</span>
+          <span id="navPendingBadge" class="nav-count-badge" hidden>0</span>
+        </button>
+
+        <button type="button" class="nav-item" data-view="leaderboard">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8 21h8M12 17v4M7 4h10v6a5 5 0 0 1-10 0V4z" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Leaderboard</span>
+        </button>
+
+        <button type="button" id="navAdminBtn" class="nav-item" data-view="admin" hidden>
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 3l7 4v5c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V7l7-4z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Exchange Admin</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button type="button" id="helpModalBtn" class="sidebar-util-btn">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M9.5 9.5a2.5 2.5 0 1 1 3.8 2.1c-.8.5-1.3 1-1.3 1.9M12 17h.01" stroke-linecap="round"/>
+          </svg>
+          <span>Get Help &amp; Keys</span>
+        </button>
+
+        <button type="button" id="themeToggleBtn" class="sidebar-util-btn" aria-label="Toggle Light or Dark Theme">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke-linecap="round"/>
+          </svg>
+          <span id="themeToggleLabel">Dark Appearance</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT COLUMN -->
+    <div class="workspace-col">
+      <!-- TOP HEADER BAR -->
+      <header class="topbar">
+        <div class="topbar-search-group">
+          <div class="search-pill">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="7"/>
+              <path d="M20 20l-3.5-3.5" stroke-linecap="round"/>
+            </svg>
+            <input id="globalSearchInput" type="search" placeholder="Search symbol, company, or sector... (press /)" aria-label="Search stocks" />
+          </div>
+          <button type="button" id="sectorFilterToggleBtn" class="filter-square-btn" title="Filter by Sector" aria-label="Filter stocks by sector">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 7h16M4 17h16M8 4v6M16 14v6" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="topbar-right">
+          <!-- Stream + Net Worth Quick Pill -->
+          <div class="networth-chip" title="Real-time Net Portfolio Value">
+            <span id="streamDot" class="stream-dot live"></span>
+            <span id="topNetWorth" class="tabular">₹10,00,000.00</span>
+          </div>
+
+          <!-- Notification Bell + Popover (Matches Screen 2 of Reference!) -->
+          <div class="notif-anchor">
+            <button type="button" id="notifBellBtn" class="icon-circle-btn" aria-label="Notifications" aria-expanded="false">
+              <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke-linecap="round"/>
+              </svg>
+              <span id="notifUnreadDot" class="notif-unread-dot"></span>
+            </button>
+
+            <div id="notifPopover" class="notif-popover" hidden role="dialog" aria-label="Notifications">
+              <div class="notif-head">
+                <h4>Notifications</h4>
+                <button type="button" id="markAllReadBtn" class="text-action-btn">✓ Mark all as read</button>
+              </div>
+              <div id="notifList" class="notif-list">
+                <!-- Populated dynamically from fills, wallet events, and live alerts -->
+              </div>
+              <div class="notif-foot">
+                <button type="button" id="seeAllActivityBtn" class="text-action-btn">See all wallet activity</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- User Chip + Sign Out -->
+          <div class="user-profile-pill">
+            <div id="userAvatarBadge" class="user-avatar">K</div>
+            <div class="user-meta">
+              <span id="userDisplayName" class="user-name">Trader</span>
+              <span id="userRoleLabel" class="user-role">TRADER</span>
+            </div>
+            <button type="button" id="logoutBtn" class="logout-chip-btn" title="Sign out" aria-label="Sign out">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Collapsible Sector Filter Strip (Triggered by Black Filter Button) -->
+      <div id="sectorFilterBar" class="sector-filter-bar" hidden>
+        <div id="sectorPillsContainer" class="sector-pills-row" role="tablist" aria-label="Filter by sector">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- MAIN WORKSPACE VIEWS -->
+      <main id="mainWorkspace" class="main-workspace">
+
+        <!-- =================================================================
+             VIEW 1: DASHBOARD (Exact Match to Screen 2 & 3 of Reference)
+             ================================================================= -->
+        <section id="view-dashboard" class="view-section active" aria-label="Trading Dashboard">
+          <div class="dashboard-grid">
+            <!-- LEFT / CENTER MAIN COLUMN -->
+            <div class="dash-main-col">
+              <!-- Hero Chart Card -->
+              <article class="surface-card chart-hero-card">
+                <div class="chart-card-top">
+                  <div class="chart-mode-group" role="tablist" aria-label="Chart Display Mode">
+                    <button type="button" class="pill-tab active" data-chart-mode="line">Trading view</button>
+                    <button type="button" class="pill-tab" data-chart-mode="candle">Candlesticks</button>
+                    <button type="button" class="pill-tab" data-chart-mode="depth">Order Book</button>
+                  </div>
+
+                  <div class="chart-symbol-controls">
+                    <label class="sr-only" for="symbolSelectDropdown">Select Equity</label>
+                    <div class="symbol-picker-pill">
+                      <span id="activeSymbolBadge" class="coin-avatar-sm">R</span>
+                      <select id="symbolSelectDropdown" class="symbol-select">
+                        <!-- Options populated dynamically -->
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="chart-quote-strip">
+                  <div class="quote-primary">
+                    <h2 id="heroStockName" class="quote-company">Reliance Industries</h2>
+                    <div class="quote-price-row">
+                      <span id="heroStockPrice" class="quote-price tabular">₹2,954.80</span>
+                      <span id="heroStockChangePill" class="badge-pill positive tabular">▲ +1.19%</span>
+                      <span id="heroStockSector" class="sector-tag">Energy</span>
+                    </div>
+                  </div>
+                  <div class="quote-ohlc-mini tabular">
+                    <div><span>Prev Close</span><strong id="heroPrevClose">₹2,920.00</strong></div>
+                    <div><span>Session High</span><strong id="heroSessionHigh">₹2,968.40</strong></div>
+                    <div><span>Session Low</span><strong id="heroSessionLow">₹2,914.10</strong></div>
+                  </div>
+                </div>
+
+                <!-- Canvas Container for Line & Candlestick Chart -->
+                <div id="chartCanvasWrap" class="chart-canvas-wrap">
+                  <canvas id="mainPriceCanvas" aria-label="Interactive intraday price chart"></canvas>
+                  <div id="chartHoverCallout" class="chart-callout tabular" hidden></div>
+                </div>
+
+                <!-- Embedded Order Book Ladder (Shown when 'Order Book' tab clicked) -->
+                <div id="embeddedDepthPane" class="embedded-depth-pane" hidden>
+                  <div class="depth-hint-bar">
+                    <span>Simulated NSE Level-2 Depth — Click any Bid or Ask row to pre-fill a Limit Order</span>
+                    <span id="depthSpreadBadge" class="muted-xs tabular">Spread ₹0.45</span>
+                  </div>
+                  <div class="depth-two-col">
+                    <div>
+                      <div class="depth-col-head"><span>Bid Price (INR)</span><span>Qty</span><span>Total</span></div>
+                      <div id="bidLadderRows" class="depth-rows"></div>
+                    </div>
+                    <div>
+                      <div class="depth-col-head"><span>Ask Price (INR)</span><span>Qty</span><span>Total</span></div>
+                      <div id="askLadderRows" class="depth-rows"></div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+
+              <!-- Market Trend Card (Matches 'Market Trend' with Colored Icons + Mini Area Sparklines!) -->
+              <article class="surface-card">
+                <div class="section-head">
+                  <h3>Market Trend</h3>
+                  <button type="button" class="view-all-link" data-goto-view="market">View All</button>
+                </div>
+                <div id="dashboardTrendList" class="market-trend-list">
+                  <!-- Populated dynamically with circular icon, name/symbol, smooth SVG sparkline, price & % -->
+                </div>
+              </article>
+
+              <!-- Portfolio Cards Row (Matches Horizontal 'Portfolio' Cards at Bottom of Screen 2 & 3!) -->
+              <div class="portfolio-row-block">
+                <div class="section-head">
+                  <h3>Portfolio</h3>
+                  <button type="button" class="view-all-link" data-goto-view="wallet">View Wallet &amp; Ledger</button>
+                </div>
+                <div id="dashboardPortfolioCards" class="portfolio-cards-grid">
+                  <!-- Populated dynamically -->
+                </div>
+              </div>
+            </div>
+
+            <!-- RIGHT RAIL COLUMN -->
+            <aside class="dash-right-col" aria-label="Balance and Order Ticket">
+              <!-- My Balance Card -->
+              <article class="surface-card balance-summary-card">
+                <div class="balance-card-top">
+                  <div>
+                    <span class="muted-label">My Balance</span>
+                    <div id="railAvailableCash" class="balance-big-figure tabular">₹10,00,000.00</div>
+                  </div>
+                  <span id="railTotalReturnPill" class="badge-pill positive tabular">▲ +0.00%</span>
+                </div>
+                <div class="balance-sub-metrics tabular">
+                  <div>
+                    <span>Net Equity</span>
+                    <strong id="railNetWorth">₹10,00,000.00</strong>
+                  </div>
+                  <div>
+                    <span>Reserved (Limits)</span>
+                    <strong id="railReservedCash">₹0.00</strong>
+                  </div>
+                  <div>
+                    <span>Position Held</span>
+                    <strong id="railSelectedShares">0 sh</strong>
+                  </div>
+                </div>
+              </article>
+
+              <!-- Place Order Card (Exact Match to Screen 3 'Place order / Buy BTC' Card!) -->
+              <article class="surface-card order-ticket-card">
+                <div class="ticket-top-row">
+                  <div>
+                    <span class="muted-label">Place order</span>
+                    <h3 id="ticketTitleSymbol" class="ticket-heading">Trade RELIANCE</h3>
+                  </div>
+                  <div class="order-type-switch" role="tablist" aria-label="Order Type">
+                    <button type="button" id="typeMarketBtn" class="mini-type-btn active" data-order-type="MARKET">Market</button>
+                    <button type="button" id="typeLimitBtn" class="mini-type-btn" data-order-type="LIMIT">Limit</button>
+                  </div>
+                </div>
+
+                <div class="ticket-fields">
+                  <!-- Price Box -->
+                  <div class="soft-input-row">
+                    <label for="orderPriceInput">Price</label>
+                    <div class="soft-input-right">
+                      <input id="orderPriceInput" type="number" step="0.05" min="0.05" class="tabular" readonly />
+                      <span class="unit-tag">INR</span>
+                    </div>
+                  </div>
+
+                  <!-- Limit Quick Price Snaps (Visible in Limit Mode) -->
+                  <div id="limitSnapRow" class="quick-chip-row" hidden>
+                    <button type="button" class="micro-chip" data-snap="-0.02">-2%</button>
+                    <button type="button" class="micro-chip" data-snap="-0.01">-1%</button>
+                    <button type="button" class="micro-chip" data-snap="0">LTP</button>
+                    <button type="button" class="micro-chip" data-snap="0.01">+1%</button>
+                    <button type="button" class="micro-chip" data-snap="0.02">+2%</button>
+                  </div>
+
+                  <!-- Quantity Box -->
+                  <div class="soft-input-row">
+                    <label for="orderQtyInput">Quantity</label>
+                    <div class="soft-input-right">
+                      <input id="orderQtyInput" type="number" step="1" min="1" value="5" class="tabular" />
+                      <span class="unit-tag">SHARES</span>
+                    </div>
+                  </div>
+
+                  <!-- Quick Sizing Chips -->
+                  <div class="quick-chip-row">
+                    <button type="button" class="micro-chip" data-size-pct="0.10">10%</button>
+                    <button type="button" class="micro-chip" data-size-pct="0.25">25%</button>
+                    <button type="button" class="micro-chip" data-size-pct="0.50">50%</button>
+                    <button type="button" class="micro-chip" data-size-pct="1.00">MAX</button>
+                  </div>
+
+                  <!-- Total Estimate Box -->
+                  <div class="soft-input-row total-row">
+                    <span>Estimated Total</span>
+                    <strong id="orderEstimatedTotal" class="tabular">₹14,774.00</strong>
+                  </div>
+                </div>
+
+                <p id="orderHelperNote" class="ticket-helper-note">
+                  Executes immediately at current NSE market price with atomic wallet settlement.
+                </p>
+
+                <!-- Stacked Solid Black Buy + Crisp Outlined Sell Buttons (Matches Reference!) -->
+                <div class="ticket-cta-stack">
+                  <button type="button" id="buyActionBtn" class="btn-primary-black btn-block">
+                    Buy RELIANCE
+                  </button>
+                  <button type="button" id="sellActionBtn" class="btn-outline-clean btn-block">
+                    Sell RELIANCE
+                  </button>
+                </div>
+              </article>
+
+              <!-- Assets & Working Limit Orders Rail Card -->
+              <article class="surface-card assets-rail-card">
+                <div class="section-head">
+                  <h3>Assets &amp; Open Limits</h3>
+                  <button type="button" class="view-all-link" data-goto-view="orders">Orders</button>
+                </div>
+                <div id="railAssetsList" class="rail-assets-list">
+                  <!-- Populated dynamically with holdings & resting limit orders -->
+                </div>
+              </article>
+            </aside>
+          </div>
+        </section>
+
+        <!-- =================================================================
+             VIEW 2: MARKET EXPLORER & FULL POSITIONS
+             ================================================================= -->
+        <section id="view-market" class="view-section" hidden aria-label="Live NSE Market">
+          <div class="section-banner">
+            <div>
+              <h2>NSE Live Market &amp; Positions</h2>
+              <p>Click any equity to open it in the trading chart, or close open holdings in one click.</p>
+            </div>
+            <div id="marketSectorTabs" class="sector-pills-row"></div>
+          </div>
+
+          <article class="surface-card">
+            <div class="table-responsive">
+              <table class="clean-table">
+                <thead>
+                  <tr>
+                    <th>Asset</th>
+                    <th>Sector</th>
+                    <th>Intraday Trend</th>
+                    <th class="num">Last Price</th>
+                    <th class="num">Prev Close</th>
+                    <th class="num">24h Change</th>
+                    <th class="num">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="fullMarketTableBody">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="surface-card">
+            <div class="section-head">
+              <h3>Open Equity Positions (Mark-to-Market)</h3>
+              <span id="positionsSummaryTag" class="muted-xs tabular">0 Active Holdings</span>
+            </div>
+            <div class="table-responsive">
+              <table class="clean-table">
+                <thead>
+                  <tr>
+                    <th>Asset</th>
+                    <th class="num">Total Qty</th>
+                    <th class="num">Avail / Escrowed</th>
+                    <th class="num">Avg Buy</th>
+                    <th class="num">Market Price</th>
+                    <th class="num">Market Value</th>
+                    <th class="num">Unrealized P/L</th>
+                    <th class="num">Quick Exit</th>
+                  </tr>
+                </thead>
+                <tbody id="openPositionsTableBody">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <!-- =================================================================
+             VIEW 3: MY WALLETS (Exact Match to Screen 1 of Reference!)
+             ================================================================= -->
+        <section id="view-wallet" class="view-section" hidden aria-label="My Wallets and Financial Ledger">
+          <div class="wallet-grid">
+            <!-- Left / Center Column -->
+            <div class="wallet-main-col">
+              <!-- Top Balance Card -->
+              <div class="wallet-top-cards">
+                <article class="surface-card wallet-hero-balance">
+                  <span class="muted-label">Total Liquid &amp; Escrowed Cash</span>
+                  <div class="wallet-hero-val tabular">
+                    <span id="walletTotalCash">₹10,00,000.00</span>
+                    <small>INR</small>
+                  </div>
+                  <div class="wallet-hero-meta">
+                    <span id="walletLedgerBadge" class="badge-pill positive">✓ Ledger Verified</span>
+                    <span id="walletDateLabel" class="muted-xs">UPDATED LIVE</span>
+                  </div>
+                </article>
+
+                <article class="surface-card wallet-equation-card">
+                  <span class="muted-label">Double-Entry Accounting Invariant</span>
+                  <div class="equation-boxes tabular">
+                    <div>
+                      <small>Available Cash</small>
+                      <strong id="eqAvail">₹10,00,000.00</strong>
+                    </div>
+                    <span class="eq-op">+</span>
+                    <div>
+                      <small>Reserved Escrow</small>
+                      <strong id="eqReserved">₹0.00</strong>
+                    </div>
+                    <span class="eq-op">=</span>
+                    <div>
+                      <small>∑ Ledger Entries</small>
+                      <strong id="eqLedgerSum">₹10,00,000.00</strong>
+                    </div>
+                  </div>
+                  <p class="muted-xs">Every fill, limit escrow, cancel refund, and deposit appends an immutable row in MySQL.</p>
+                </article>
+              </div>
+
+              <!-- Money Flow Bar Chart Card (Black & Soft-Gray Rounded Bars like Screen 1!) -->
+              <article class="surface-card">
+                <div class="section-head">
+                  <div>
+                    <h3>Money Flow</h3>
+                    <p class="muted-xs">Cash credits &amp; sale proceeds vs. equity purchases across recent ledger activity</p>
+                  </div>
+                  <div class="flow-legend">
+                    <span><i class="legend-dot black"></i> Credits / Inflow</span>
+                    <span><i class="legend-dot gray"></i> Debits / Trades</span>
+                  </div>
+                </div>
+                <div class="money-flow-canvas-wrap">
+                  <canvas id="moneyFlowCanvas" aria-label="Money flow bar chart"></canvas>
+                </div>
+              </article>
+
+              <!-- Bottom 2-Column Split: Custody Buckets + Share Conversion Calculator (Screen 1!) -->
+              <div class="wallet-bottom-split">
+                <article class="surface-card">
+                  <div class="section-head">
+                    <h3>Custody Allocation</h3>
+                  </div>
+                  <div class="currency-breakdown-list tabular">
+                    <div class="currency-row">
+                      <div class="currency-left">
+                        <span class="currency-dot emerald">₹</span>
+                        <div><strong>Available Buying Power</strong><small>Ready for instant orders</small></div>
+                      </div>
+                      <strong id="allocAvailCash">₹10,00,000.00</strong>
+                    </div>
+                    <div class="currency-row">
+                      <div class="currency-left">
+                        <span class="currency-dot amber">⏳</span>
+                        <div><strong>Escrowed Limit Cash</strong><small>Locked in pending BUY limits</small></div>
+                      </div>
+                      <strong id="allocReservedCash">₹0.00</strong>
+                    </div>
+                    <div class="currency-row">
+                      <div class="currency-left">
+                        <span class="currency-dot violet">📈</span>
+                        <div><strong>Invested Equity Value</strong><small>Live mark-to-market holdings</small></div>
+                      </div>
+                      <strong id="allocEquityVal">₹0.00</strong>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="surface-card">
+                  <div class="section-head">
+                    <h3>Share Conversion</h3>
+                    <span class="muted-xs">Live Purchasing Power</span>
+                  </div>
+                  <div class="conversion-stack">
+                    <div class="conv-row">
+                      <span class="conv-pill">INR ₹</span>
+                      <input id="convInrInput" type="number" value="100000" min="100" step="1000" class="conv-input tabular" aria-label="INR amount to convert" />
+                    </div>
+                    <div class="conv-row">
+                      <select id="convSymbolSelect" class="conv-select" aria-label="Stock symbol for conversion"></select>
+                      <input id="convSharesOutput" type="text" readonly class="conv-input tabular" aria-label="Equivalent shares" />
+                    </div>
+                    <div class="conv-foot">
+                      <span id="convRemainderNote" class="muted-xs tabular">Calculates exact whole shares + cash remainder</span>
+                      <button type="button" id="applyConvToTicketBtn" class="text-action-btn">Load in Ticket →</button>
+                    </div>
+                  </div>
+                </article>
+              </div>
+            </div>
+
+            <!-- Right Rail in My Wallets: Virtual Black Card + Recent Activity -->
+            <aside class="wallet-right-col">
+              <article class="surface-card">
+                <div class="section-head">
+                  <h3>Wallet</h3>
+                </div>
+                <!-- Matte Jet-Black Card (Matches Screen 1!) -->
+                <div class="virtual-black-card">
+                  <div class="vcard-top">
+                    <span class="vcard-chip"></span>
+                    <span class="vcard-brand">TradeSim Custody</span>
+                  </div>
+                  <div id="vcardAccountNum" class="vcard-number tabular">4532  8810  4092  8080</div>
+                  <div class="vcard-bottom">
+                    <div>
+                      <small>Account Holder</small>
+                      <strong id="vcardHolderName">Karthik Trader</strong>
+                    </div>
+                    <div class="vcard-circles" aria-hidden="true">
+                      <span class="vc-c1"></span>
+                      <span class="vc-c2"></span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 4 Quick Action Tiles Below Card -->
+                <div class="vcard-actions">
+                  <button type="button" class="vcard-action-btn" data-goto-view="dashboard">
+                    <span class="vcard-act-icon">↗</span>
+                    <small>Trade</small>
+                  </button>
+                  <button type="button" class="vcard-action-btn" data-goto-view="orders">
+                    <span class="vcard-act-icon">☰</span>
+                    <small>Orders</small>
+                  </button>
+                  <button type="button" id="walletExportCsvBtn" class="vcard-action-btn">
+                    <span class="vcard-act-icon">⇩</span>
+                    <small>CSV</small>
+                  </button>
+                  <button type="button" id="walletRefreshAuditBtn" class="vcard-action-btn">
+                    <span class="vcard-act-icon">✓</span>
+                    <small>Verify</small>
+                  </button>
+                </div>
+              </article>
+
+              <!-- Recent Activity Feed -->
+              <article class="surface-card">
+                <div class="section-head">
+                  <h3>Recent Activity</h3>
+                  <span id="ledgerCountTag" class="muted-xs">Append-Only</span>
+                </div>
+                <div id="walletActivityFeed" class="activity-feed-list">
+                  <!-- Populated from /api/wallet ledger entries -->
+                </div>
+              </article>
+            </aside>
+          </div>
+        </section>
+
+        <!-- =================================================================
+             VIEW 4: ORDERS & AUDIT BLOTTER + CSV EXPORT
+             ================================================================= -->
+        <section id="view-orders" class="view-section" hidden aria-label="Orders and Trade History">
+          <div class="section-banner">
+            <div>
+              <h2>Order Blotter &amp; Resting Limits</h2>
+              <p>Filter historical executions, cancel pending escrowed limit orders, or export audit CSV.</p>
+            </div>
+            <button type="button" id="exportCsvBtn" class="btn-primary-black">Export CSV</button>
+          </div>
+
+          <article class="surface-card">
+            <form id="orderFilterForm" class="filter-grid-bar">
+              <div class="filter-field">
+                <label for="fltSymbol">Symbol</label>
+                <input id="fltSymbol" type="text" placeholder="e.g. RELIANCE" />
+              </div>
+              <div class="filter-field">
+                <label for="fltSide">Side</label>
+                <select id="fltSide">
+                  <option value="">All Sides</option>
+                  <option value="BUY">BUY</option>
+                  <option value="SELL">SELL</option>
+                </select>
+              </div>
+              <div class="filter-field">
+                <label for="fltType">Type</label>
+                <select id="fltType">
+                  <option value="">All Types</option>
+                  <option value="MARKET">MARKET</option>
+                  <option value="LIMIT">LIMIT</option>
+                </select>
+              </div>
+              <div class="filter-field">
+                <label for="fltStatus">Status</label>
+                <select id="fltStatus">
+                  <option value="">All Statuses</option>
+                  <option value="PENDING">PENDING</option>
+                  <option value="FILLED">FILLED</option>
+                  <option value="CANCELLED">CANCELLED</option>
+                </select>
+              </div>
+              <div class="filter-actions">
+                <button type="submit" class="btn-primary-black">Apply Filter</button>
+                <button type="button" id="resetOrderFilterBtn" class="btn-outline-clean">Reset</button>
+              </div>
+            </form>
+
+            <div class="table-responsive">
+              <table class="clean-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Created</th>
+                    <th>Asset</th>
+                    <th>Side</th>
+                    <th>Type</th>
+                    <th class="num">Qty</th>
+                    <th class="num">Limit / Fill Price</th>
+                    <th class="num">Value</th>
+                    <th>Status</th>
+                    <th class="num">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="ordersTableBody">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <!-- =================================================================
+             VIEW 5: LEADERBOARD
+             ================================================================= -->
+        <section id="view-leaderboard" class="view-section" hidden aria-label="Trader Leaderboard">
+          <div class="section-banner">
+            <div>
+              <h2>Trader Leaderboard</h2>
+              <p>Live net-worth rankings computed via relational SQL joins across cash, escrow, and mark-to-market equity.</p>
+            </div>
+          </div>
+
+          <div id="leaderboardPodium" class="podium-grid">
+            <!-- Top 3 cards -->
+          </div>
+
+          <article class="surface-card">
+            <div class="table-responsive">
+              <table class="clean-table">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Trader</th>
+                    <th class="num">Liquid &amp; Reserved Cash</th>
+                    <th class="num">Equity Value</th>
+                    <th class="num">Total Net Worth</th>
+                    <th class="num">Return vs ₹10L</th>
+                  </tr>
+                </thead>
+                <tbody id="leaderboardTableBody"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <!-- =================================================================
+             VIEW 6: EXCHANGE ADMIN CONSOLE
+             ================================================================= -->
+        <section id="view-admin" class="view-section" hidden aria-label="Exchange Administration">
+          <div class="section-banner">
+            <div>
+              <h2>Exchange Administration</h2>
+              <p>List or delist NSE symbols (with automatic shareholder cash settlement) and manage trader custody.</p>
+            </div>
+          </div>
+
+          <div class="admin-two-col">
+            <article class="surface-card">
+              <h3>List or Relist Equity</h3>
+              <form id="adminAddStockForm" class="clean-form">
+                <div class="form-row-2">
+                  <div class="field-box">
+                    <label for="admSymbol">Ticker Symbol</label>
+                    <input id="admSymbol" type="text" placeholder="ZOMATO" required maxlength="16" />
+                  </div>
+                  <div class="field-box">
+                    <label for="admSector">Sector</label>
+                    <input id="admSector" type="text" placeholder="Consumer Tech" required maxlength="40" />
+                  </div>
+                </div>
+                <div class="field-box">
+                  <label for="admName">Company Name</label>
+                  <input id="admName" type="text" placeholder="Zomato Limited" required maxlength="100" />
+                </div>
+                <div class="field-box">
+                  <label for="admPrice">Opening Price (INR)</label>
+                  <input id="admPrice" type="number" step="0.05" min="1" placeholder="264.50" required />
+                </div>
+                <button type="submit" class="btn-primary-black">List Equity on Exchange</button>
+              </form>
+            </article>
+
+            <article class="surface-card">
+              <h3>Listed Equities (<span id="adminStockCount">0</span>)</h3>
+              <div class="table-responsive compact-scroll">
+                <table class="clean-table">
+                  <thead>
+                    <tr>
+                      <th>Symbol</th>
+                      <th>Sector</th>
+                      <th class="num">Price</th>
+                      <th class="num">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminStocksTableBody"></tbody>
+                </table>
+              </div>
+            </article>
+          </div>
+
+          <article class="surface-card">
+            <h3>Registered Accounts &amp; Ledger Health</h3>
+            <div class="table-responsive">
+              <table class="clean-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th class="num">Total Cash</th>
+                    <th class="num">Equity Value</th>
+                    <th class="num">Net Worth</th>
+                    <th>Ledger Invariant</th>
+                    <th class="num">Custody Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="adminUsersTableBody"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       ADMIN DEPOSIT MODAL & KEYBOARD HELP MODAL
+       ===================================================================== -->
+  <div id="depositModal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="depositModalTitle">
+    <div class="modal-card">
+      <div class="section-head">
+        <h3 id="depositModalTitle">Credit Trader Wallet</h3>
+        <button type="button" id="closeDepositModalBtn" class="icon-close-btn" aria-label="Close modal">✕</button>
+      </div>
+      <form id="adminDepositForm" class="clean-form">
+        <p id="depositTargetLabel" class="muted-xs"></p>
+        <div class="field-box">
+          <label for="depositAmountInput">Deposit Amount (INR)</label>
+          <input id="depositAmountInput" type="number" min="100" step="100" value="50000" required />
+        </div>
+        <div class="field-box">
+          <label for="depositNoteInput">Audit Ledger Note</label>
+          <input id="depositNoteInput" type="text" value="Admin promotional margin credit" maxlength="140" />
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="cancelDepositBtn" class="btn-outline-clean">Cancel</button>
+          <button type="submit" class="btn-primary-black">Confirm Credit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="helpModal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="helpModalTitle">
+    <div class="modal-card">
+      <div class="section-head">
+        <h3 id="helpModalTitle">Keyboard Shortcuts &amp; Settlement Rules</h3>
+        <button type="button" id="closeHelpModalBtn" class="icon-close-btn" aria-label="Close help modal">✕</button>
+      </div>
+      <div class="help-grid">
+        <div class="help-item"><kbd>/</kbd><span>Focus global symbol &amp; sector search</span></div>
+        <div class="help-item"><kbd>1</kbd> – <kbd>5</kbd><span>Switch Dashboard, Market, Wallets, Orders, Leaderboard</span></div>
+        <div class="help-item"><kbd>Esc</kbd><span>Close Notifications popover or active modal</span></div>
+      </div>
+      <hr class="clean-hr" />
+      <p class="muted-xs">
+        <strong>ACID Settlement Guarantee:</strong> Market orders settle immediately via lock-free MySQL conditional updates
+        (<code>WHERE balance &gt;= ?</code>). Limit BUY orders escrow cash into <code>reserved_cash</code>; Limit SELL orders escrow shares
+        into <code>reserved_quantity</code>, automatically matching on live 1.5s SSE market ticks with price-improvement refunds.
+      </p>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
