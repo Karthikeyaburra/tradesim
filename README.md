@@ -1,6 +1,8 @@
-# TradeSim — Simulated Equity Exchange & ACID Financial Ledger
+# TradeSim — Real-Time Stock Trading Platform & ACID Financial Ledger
 
-A full-stack virtual stock-trading web platform built with **Java, Spring Boot 4, MySQL 8 (JDBC), and a zero-dependency WCAG-accessible ES6 Web Client**. Designed around payment-grade transactional invariants, row-level concurrency control without JVM locks, and clean Object-Oriented architecture.
+[![CI — MySQL Concurrency & Integration Suite](https://github.com/Karthikeyaburra/tradesim/actions/workflows/ci.yml/badge.svg)](https://github.com/Karthikeyaburra/tradesim/actions/workflows/ci.yml)
+
+A full-stack virtual stock-trading web platform built with **Java 21, Spring Boot 4, MySQL 8 (JDBC), live NSE market quote anchoring, and a zero-dependency WCAG-accessible ES6 Web Client**. Designed around payment-grade transactional invariants, row-level concurrency control without JVM locks, and clean Object-Oriented architecture.
 
 ---
 
